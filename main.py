@@ -212,12 +212,24 @@ with st.sidebar:
         st.session_state['user_diet'] = st.selectbox("Diet", ["Balanced ⚖️", "Keto 🥩", "Vegan 🥗"])
         
         if st.button("Save Stats"):
+            # 1. BMI Calculation
             bmi = w / ((h/100)**2)
             st.session_state['bmi'] = bmi
-            base = (10*w) + (6.25*h) - (5*age) + (5 if "Male" in gender else -161)
-            mult = 1.2 if "Lazy" in act else 1.55 if "Active" in act else 1.75
-            st.session_state['daily_goal'] = int(base * mult)
-            st.success("Updated! 🚀")
+            
+            # 2. BMR Calculation (Mifflin-St Jeor)
+            # Men: (10 × weight) + (6.25 × height) - (5 × age) + 5
+            # Women: (10 × weight) + (6.25 × height) - (5 × age) - 161
+            
+            gender_offset = 5 if "Male" in gender else -161
+            base_bmr = (10 * w) + (6.25 * h) - (5 * age) + gender_offset
+            
+            # 3. Activity Multiplier
+            if "Lazy" in act: mult = 1.2
+            elif "Active" in act: mult = 1.55
+            else: mult = 1.9  # Athlete
+            
+            st.session_state['daily_goal'] = int(base_bmr * mult)
+            st.success(f"Updated! Goal: {st.session_state['daily_goal']} kcal 🚀")
 
     # 3. HYDRATION
     st.write("### 💧 Hydration")
@@ -250,11 +262,46 @@ with st.sidebar:
 
 # --- PAGE: HOME & FEATURES ---
 if "Home" in st.session_state['page']:
-    st.markdown("<h1 style='text-align: center; color: #00E676;'>🥗 Welcome to NutriScan AI</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #bbb;'>Your Fun, Smart, and Healthy Food Companion! 🚀</p>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; color: #00E676;'>🥗 NutriScan AI</h1>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; font-size: 1.2rem; color: #bbb;'>Your Fun, Smart & Healthy Food Companion! 🚀</p>", unsafe_allow_html=True)
+    
     st.write("---")
     
-    st.markdown("### ✨ What can I do?")
+    # --- HEALTH STATS SECTION (FIXED VISIBILITY) ---
+    st.subheader("🏥 My Health Stats")
+    
+    # Check if BMI is calculated (greater than 0)
+    if st.session_state['bmi'] > 0:
+        hc1, hc2 = st.columns(2)
+        
+        # Card 1: BMI
+        with hc1:
+            bmi_val = st.session_state['bmi']
+            bmi_status = "💚 Healthy" if 18.5 <= bmi_val < 25 else "⚠️ Checkup"
+            st.markdown(f"""
+            <div class="glass-card" style="text-align:center;">
+                <h2>⚖️ BMI Score</h2>
+                <h1 style="color:#FFD700; font-size: 3rem;">{bmi_val:.1f}</h1>
+                <p style="font-size: 1.2rem;">Status: <b>{bmi_status}</b></p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        # Card 2: BMR (Daily Goal)
+        with hc2:
+            st.markdown(f"""
+            <div class="glass-card" style="text-align:center;">
+                <h2>🔥 Daily Goal</h2>
+                <h1 style="color:#FF5722; font-size: 3rem;">{st.session_state['daily_goal']}</h1>
+                <p style="font-size: 1.2rem;">Calories to maintain weight</p>
+            </div>
+            """, unsafe_allow_html=True)
+    else:
+        # Fallback if no data (Friendly Prompt)
+        st.info("👈 **Tip:** Go to the Sidebar, enter your Age/Weight/Height, and click 'Save Stats' to see your Health Cards here!")
+
+    st.write("---")
+    
+    st.markdown("### ✨ App Features")
     
     c1, c2, c3 = st.columns(3)
     with c1:
